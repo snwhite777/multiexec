@@ -40,6 +40,16 @@ import paramiko as pr
 __author__ = "Nam Tran"
 __copyright__ = "Copyright 2016"
 __email__ = "namtt.7@gmail.com"
+def output2file(host,out_dir,content):
+	"""
+	This function is used to write output to file. The function will be used to write "content"
+	to file "out_dir"/"host"
+	"""
+	if not os.path.exists(out_dir):
+			os.makedirs(out_dir);
+	file = open("{}/{}".format(out_dir,host),'w');
+	file.write(content);
+	file.close();
 
 def execute(host,out_dir,filename,command):
 	"""
@@ -83,12 +93,7 @@ def execute(host,out_dir,filename,command):
 		stdin.close()
 		result = stdout.read().decode();
 	finally:
-		if not os.path.exists(out_dir):
-			os.makedirs(out_dir);
-		file = open("{}/{}".format(out_dir,host),'w');
-		file.write(result);
-		file.close();
-		return result;
+		return "{}:{}".format(host,result);
 
 
 def abortable_func(func, *args, **kwargs):
@@ -124,7 +129,7 @@ def abortable_func(func, *args, **kwargs):
 		return out
 	except TimeoutError:
 		p.terminate()
-		return "Timeout exceeded. Process terminated.";
+		return "{}:Timeout exceeded. Process terminated.\r\n".format(args[0]);
 
 def main():
 	"""
@@ -158,7 +163,7 @@ def main():
 	if args.max_child > len(hosts):
 		max_child = len(hosts);
 	else:
-		max_child = args.max_child;	
+		max_child = args.max_child;
 	
 	#...filename
 	if args.filename != '':
@@ -169,11 +174,15 @@ def main():
 	
 	
 	#Create the worker pool and depoy the command to all destination hosts
+	#Output the result to "out_dir"/"host"
+	#In execute() and abortable_func(), hostname was included into the returned string
+	# so that they can be extracted here.
 	p = Pool(max_child);
 	print("Output are printed to {}".format(out_dir));
 	for i in p.imap(partial_execute,hosts,1):
-		if i=="Timeout exceeded. Process terminated.":
-			print(i);
+		print(i);
+		i_split = i.split(':',1);
+		output2file(i_split[0],out_dir,i_split[1]);
 
 if __name__ == "__main__":
 	main()
