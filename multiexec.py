@@ -59,10 +59,14 @@ def execute(host,out_dir,filename,command):
 	#- AutoAddPolicy is set so that the destination host do not need to be
 	#in the known_hosts file of the admin
 	#- load_system_host_keys load the host keys from default location ~user/.ssh/known_hosts
-	ssh_client = pr.SSHClient();
-	ssh_client.set_missing_host_key_policy(pr.AutoAddPolicy());
-	ssh_client.load_system_host_keys();
-	ssh_client.connect(host);
+	#- Adding try - exception to catch errors
+	try:
+		ssh_client = pr.SSHClient();
+		ssh_client.set_missing_host_key_policy(pr.AutoAddPolicy());
+		ssh_client.load_system_host_keys();
+		ssh_client.connect(host);
+	except:
+		return "Unable to connect to {}".format(host);
 
 	#- SCP to /var/tmp in the destination host if "filename" option is specified
 	#- SFTPClient documentation is at http://docs.paramiko.org/en/2.0/api/sftp.html
