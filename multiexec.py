@@ -66,28 +66,30 @@ def execute(host,out_dir,filename,command):
 		ssh_client.load_system_host_keys();
 		ssh_client.connect(host);
 	except:
-		return "Unable to connect to {}".format(host);
+		result = "Unable to connect to {}".format(host);
+	else:
+		#- SCP to /var/tmp in the destination host if "filename" option is specified
+		#- SFTPClient documentation is at http://docs.paramiko.org/en/2.0/api/sftp.html
+		if filename != None:
+			sftp_session = ssh_client.open_sftp();
+			path,name = os.path.split(filename);
+			sftp_session.put(filename,"/var/tmp/{}".format(name));
+			sftp_session.close();
+		
+		#- Execute the command in the destination host using SSHClient method exec_command
+		#- Documentation of SSHClient is at http://docs.paramiko.org/en/2.0/api/client.html
+		#- Write the command output to "out_dir"/"host" directory
+		stdin, stdout, stderr = ssh_client.exec_command(command);
+		stdin.close()
+		result = stdout.read().decode();
+	finally:
+		if not os.path.exists(out_dir):
+			os.makedirs(out_dir);
+		file = open("{}/{}".format(out_dir,host),'w');
+		file.write(result);
+		file.close();
+		return result;
 
-	#- SCP to /var/tmp in the destination host if "filename" option is specified
-	#- SFTPClient documentation is at http://docs.paramiko.org/en/2.0/api/sftp.html
-	if filename != None:
-		sftp_session = ssh_client.open_sftp();
-		path,name = os.path.split(filename);
-		sftp_session.put(filename,"/var/tmp/{}".format(name));
-		sftp_session.close();
-	
-	#- Execute the command in the destination host using SSHClient method exec_command
-	#- Documentation of SSHClient is at http://docs.paramiko.org/en/2.0/api/client.html
-	#- Write the command output to "out_dir"/"host" directory
-	stdin, stdout, stderr = ssh_client.exec_command(command);
-	stdin.close()
-	result = stdout.read().decode();
-	if not os.path.exists(out_dir):
-		os.makedirs(out_dir);
-	file = open("{}/{}".format(out_dir,host),'w');
-	file.write(result);
-	file.close();
-	return result;
 
 def abortable_func(func, *args, **kwargs):
 	"""
