@@ -180,7 +180,6 @@ def main():
 	p = Pool(max_child);
 	print("Output are printed to {}".format(out_dir));
 	for i in p.imap(partial_execute,hosts,1):
-		print(i);
 		i_split = i.split(':',1);
 		output2file(i_split[0],out_dir,i_split[1]);
 
