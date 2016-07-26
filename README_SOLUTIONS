@@ -1,0 +1,46 @@
+In my opinion, the challenge of this exercise is to gather required information presented in
+  the 8 tasks from a big list of destination hosts. I decided to not write 8 separate
+  scripts neither 1 script that contains 8 separate functions to fulfill each of the tasks.
+  Instead, I decided to write a general script that get a list of destination
+  hostnames, login to each of these hosts, and execute any command that is required in
+  each of these host. Since the number of destination hosts can be large (eg. the whole
+  global infrastructure), we cannot do that serially, it must be done parallelly
+  ie. multiprocessing.
+
+Multiprocessing was strongly supported by Python 3. I imported the multiprocessing module and
+  use its Pool class to create a pool of worker that will process my destination hosts. I also
+  use the Thread feature (multiprocessing.dummy.Pool) to implement the timeout feature, which
+  was successful.
+
+I also considered Fabric (http://www.fabfile.org/) to help me SSH to the destination hosts. The
+  module is widely adopted among Python developers, it even provided a parallel support which makes
+  life much easier. However, finally I decided to not use Fabric since it does not support Python3.
+  Instead, I use Paramiko(http://www.paramiko.org/) and combine it with multiprocessing to achieve 
+  most features of this script.
+============================================================================
+Below is the solution for the 8 tasks using multiexec.py
+
+1. A 30 second sample of number of context switches on the host.
+python3 multiexec.py --hostlist hostlist.txt --command "vmstat 1 30 | awk '{print \$12}'" --out_dir /home/tnam/pythonsc/SAMPLE_OUTPUT/task1/
+
+2. Whether the node is able to reach each of the other nodes
+python3 multiexec.py --hostlist hostlist.txt --command "for i in \$(cat /var/tmp/hostlist.txt); do ping -c1 -i1 \$i; done" --out_dir /home/tnam/pythonsc/SAMPLE_OUTPUT/task2/ --filename hostlist.txt
+
+3. A 30 second sample of the average service time for each of the physical disks attached to the node.
+python3 multiexec.py --hostlist hostlist.txt --command "sar -d 1 30| awk '{print \$1,\$2,\$3,\$9,\$10}'" --out_dir /home/tnam/pythonsc/SAMPLE_OUTPUT/task3/
+
+4. The top five processes in total cpu time
+python multiexec.py --hostlist hostlist.txt --command "ps -eo pcpu,pmem,pid,user,args | sort -rk1 |head -6" --out_dir /home/tnam/pythonsc/SAMPLE_OUTPUT/task4/
+
+5. The top five processes in resident memory usage
+python multiexec.py --hostlist hostlist.txt --command "ps -eo pmem,pcpu,pid,user,args | sort -rk1 |head -6" --out_dir /home/tnam/pythonsc/SAMPLE_OUTPUT/task5/
+
+6. The current cpu load of the machine
+python multiexec.py --hostlist hostlist.txt --command "uptime" --out_dir /home/tnam/pythonsc/SAMPLE_OUTPUT/task6/
+
+7. Any retransmits on any of its interfaces
+python multiexec.py --hostlist hostlist.txt --command "netstat -s | grep -i retransmit" --out_dir /home/tnam/pythonsc/SAMPLE_OUTPUT/task7/
+
+8. The average file size per directory under /home
+python multiexec.py --hostlist hostlist.txt --command "for i in \$(find /home -mindepth 1 -maxdepth 1 -type d); do  echo \$i; find \$i -type f -ls | awk '{sum+=\$7; n++;} END {print sum/n;}'; done" --out_dir /home/tnam/pythonsc/SAMPLE_OUTPUT/task8/
+
